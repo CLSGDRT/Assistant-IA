@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from typing import Optional
 from langgraph.graph import StateGraph, END
 
-llm = ChatOllama(model="llama3")
+llm = ChatOllama(model="llama3.1")
 
 class AssistantState(BaseModel):
     user_id: Optional[int] = None
@@ -34,11 +34,13 @@ def detect_task_intent(state: AssistantState) -> AssistantState:
     structured_llm = llm.with_structured_output(IsTodo)
     chain = detect_prompt | structured_llm
     result = chain.invoke({"message": message})
-    return AssistantState(
-        is_task = result.is_task,
-        message = message,
-        user_id = state.user_id,
-    )
+    state.is_task = result.is_task
+    return state
+    # return AssistantState(
+    #     is_task = result.is_task,
+    #     message = message,
+    #     user_id = state.user_id,
+    # )
 
 class ExtractedTask(BaseModel):
     task_content: str
@@ -86,7 +88,7 @@ class ReplyContent(BaseModel):
     reply: str
 
 acknowledge_prompt = PromptTemplate.from_template("""
-    Tu dois répondre `a l'utilisateur pour lui confirmer aue la tâchhe a bien été créée.
+    Tu dois répondre `a l'utilisateur pour lui confirmer que la tâchhe a bien été créée.
     Tu dois répondre d'une façon sympathique.
 
     Tâche ajoutée à la Todo :
